@@ -22,9 +22,9 @@ if (argc != 4) {
     exit(1);
 }
 
-double longitude = atof(argv[1]);
-double latitude = atof(argv[2]);
-double altitude = atof(argv[3]);
+long longitude = atof(argv[1]);
+long latitude = atof(argv[2]);
+long altitude = atof(argv[3]);
 
 /* Normalise longitude (0-360) */
 if(longitude < 0) {
@@ -38,13 +38,30 @@ latitude += 90;
 longitude *=  (360 * 100 * 100);
 latitude *= (360 * 100 * 100);
 
+
+latitude += 90;
+latitude /= 180;
+latitude *= (2&0xffffffff);
+longitude += 180;
+longitude /= 360;
+longitude *= (2&0xffffffff);
+altitude += 100;
+altitude *= 10;
+
 /* Convert to integer values */
-int longitudeInt = (int) longitude;
-int latitudeInt = (int) latitude;
+long longitudeInt = (long) longitude;
+long latitudeInt = (long) latitude;
+long altitudeInt = (long) latitude;
+
+/*print "3ffe:%04x:%04x:%04x:%04x:%04x:dead:beef" % \
+        ((lat&(0xffff<<16))>>16, lat&0xffff, \
+        (long&(0xffff<<16))>>16, long&0xffff, \
+        alt&0xffff)
+*/
 
 /* Output IP Address */
 printf("3ffe::%04x::%04x::%04x::%04x::%04x\n", longitudeInt >> 16, longitudeInt & 0xffff,
- latitudeInt >> 16, latitudeInt & 0xffff, (int) altitude);
+ latitudeInt >> 16, latitudeInt & 0xffff, (long) altitude);
 
 return 0;
 
