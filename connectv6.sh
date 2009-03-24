@@ -1,3 +1,8 @@
+usage() {
+    echo "connectv6.sh - Connects to candlelight network ad-hoc"
+    echo "Usage: sudo connectv6.sh eric";
+}
+
 if [ ! -n "$1" ]; then 
     echo 'Please provide a name.';
     exit 1; 
@@ -23,3 +28,4 @@ fi
 echo "Your Ipv6 address is $ip";
 sh connect.sh
 ifconfig $interface add $ip/128;
+ifconfig wlan0 up
