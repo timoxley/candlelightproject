@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<graph>
+<TextNode id="0" text="Home">
+<neighbour id="1" />
+<neighbour id="2" />
+<neighbour id="3" />
+</TextNode>
+<TextNode id="1" text="Test 1">
+<neighbour id="0" />
+</TextNode>
+<TextNode id="2" text="Test 2">
+<neighbour id="0" />
+</TextNode>
+<TextNode id="3" text="Test 3">
+<neighbour id="0" />
+</TextNode>
+</graph>
