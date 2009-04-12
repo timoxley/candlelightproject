@@ -1,20 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	
     <string name="hello">Welcome to Toonstruck!</string>
     <string name="app_name">LifeMap</string>
     
-    <string name="menu_start">Start</string>
-    <string name="menu_stop">Stop</string>
-    <string name="menu_pause">Pause</string>
-    <string name="menu_resume">Resume</string>
-    <string name="menu_difficulty">Difficulty</string>
-    <string name="menu_easy">Easy</string>
-    <string name="menu_medium">Medium</string>
-    <string name="menu_hard">Hard</string>
-    
-    <string name="mode_ready">Press Up To Start</string>
-	<string name="mode_pause">Paused\nPress Up To Resume</string>
-	<string name="mode_lose">Game Over\nPress Up To Play</string>
-	<string name="mode_win_prefix">Success!\n</string> 
-	<string name="mode_win_suffix">in a row\nPress Up to Play</string> 
+    <string name="add_node">Add Node</string>
+    <string name="contact_node">Contact Node</string>
+    <string name="calendar_node">Calendar Node</string>
+    <string name="text_node">Text Node</string>
+
 </resources>

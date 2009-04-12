@@ -18,12 +18,10 @@ import com.candlelightproject.lifemap.MapView.MapThread;
 
 public class LifeMap extends Activity {
 	
-	// This static field is used such that other
-	// classes can use this activities' context
+	/** This static field is used such that other classes can use this activities' context */
 	public static Activity me = null; 
 	
-	// Temporary internal data model for the contacts
-	// currently on the phone.
+	/** Temporary internal data model for the contacts currently on the phone. */
 	public ContactNode[] contacts;
 	
 	/** A handle to the thread that's actually running the animation. */
@@ -31,6 +29,9 @@ public class LifeMap extends Activity {
 
     /** A handle to the View in which the game is running. */
     private MapView mMapView;
+    
+    
+    public static final int INSERT_ID = Menu.FIRST;
 	
 	/** Called when the activity is first created. */
     @Override
@@ -39,8 +40,7 @@ public class LifeMap extends Activity {
     	super.onCreate(savedInstanceState);
     	
     	// turn off the window's title bar
-	    requestWindowFeature(Window.FEATURE_NO_TITLE);
-	    
+	    requestWindowFeature(Window.FEATURE_NO_TITLE);    
         setContentView(R.layout.main);
         
         me = this;
@@ -108,6 +108,7 @@ public class LifeMap extends Activity {
         super.onCreateOptionsMenu(menu);
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.options_menu, menu);
+        
         /*// Set default menu option
         Log.i(this.getClass().toString(), "Difficulty is: " + mMapThread.getDifficulty());
         switch (mMapThread.getDifficulty()) {
@@ -143,34 +144,45 @@ public class LifeMap extends Activity {
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        /*switch (item.getItemId()) {
-            case R.id.menu_start:
-                mMapThread.doStart();
-                return true;
-            case R.id.menu_stop:
-                mMapThread.setState(MapThread.STATE_LOSE,
-                        getText(R.string.message_stopped));
-                return true;
-            case R.id.menu_pause:
-                mMapThread.pause();
-                return true;
-            case R.id.menu_resume:
-                mMapThread.unpause();
-                return true;
-            case R.id.menu_easy:
-                mMapThread.setDifficulty(MapThread.DIFFICULTY_EASY);
-                item.setChecked(true);
-                return true;
-            case R.id.menu_medium:
-                mMapThread.setDifficulty(MapThread.DIFFICULTY_MEDIUM);
-                item.setChecked(true);
-                return true;
-            case R.id.menu_hard:
-                mMapThread.setDifficulty(MapThread.DIFFICULTY_HARD);
-                item.setChecked(true);
-                return true;
+    	switch (item.getItemId()) {
+    	
+	    	case R.id.contact_node:
+				return true;
+				
+	    	case R.id.calendar_node:
+				return true;
+    	
+    		case R.id.text_node:
+    			return true;
+            
+    	
+//    		case R.id.menu_start:
+//                mMapThread.doStart();
+//                return true;
+//            case R.id.menu_stop:
+//                mMapThread.setState(MapThread.STATE_LOSE,
+//                        getText(R.string.message_stopped));
+//                return true;
+//            case R.id.menu_pause:
+//                mMapThread.pause();
+//                return true;
+//            case R.id.menu_resume:
+//                mMapThread.unpause();
+//                return true;
+//            case R.id.menu_easy:
+//                mMapThread.setDifficulty(MapThread.DIFFICULTY_EASY);
+//                item.setChecked(true);
+//                return true;
+//            case R.id.menu_medium:
+//                mMapThread.setDifficulty(MapThread.DIFFICULTY_MEDIUM);
+//                item.setChecked(true);
+//                return true;
+//            case R.id.menu_hard:
+//                mMapThread.setDifficulty(MapThread.DIFFICULTY_HARD);
+//                item.setChecked(true);
+//                return true;
         }
-*/
+
         return false;
     }
 	

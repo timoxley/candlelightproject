@@ -8,10 +8,22 @@
 		MENU_HARD, 0, R.string.menu_hard);
 	-->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-	<item android:id="@+id/menu_start" android:title="@string/menu_start" />
-	<item android:id="@+id/menu_stop" android:title="@string/menu_stop" />
-	<item android:id="@+id/menu_pause" android:title="@string/menu_pause" />
-	<item android:id="@+id/menu_resume" android:title="@string/menu_resume" />
+
+<!--
+	<item android:id="@+id/add_node" android:title="@string/add_node"/>
+-->
+
+	<item android:id="@+id/add_node" android:title="@string/add_node" android:menuCategory="container">
+		<menu xmlns:android="http://schemas.android.com/apk/res/android">
+		<group android:id="@+id/group_node_type" android:checkableBehavior="single">
+			<item android:id="@+id/contact_node" android:title="@string/contact_node" />
+			<item android:id="@+id/calendar_node" android:title="@string/calendar_node" />
+			<item android:id="@+id/text_node" android:title="@string/text_node" />
+		</group>
+		</menu>
+	</item>
+
+<!--
 	<item android:id="@+id/menu_difficulty" android:title="@string/menu_difficulty" android:menuCategory="container">	
 		<menu xmlns:android="http://schemas.android.com/apk/res/android">
 		<group android:id="@+id/group_difficulty" android:checkableBehavior="single">
@@ -21,4 +33,5 @@
 		</group>
 		</menu>
 	</item>
+	-->
 </menu>

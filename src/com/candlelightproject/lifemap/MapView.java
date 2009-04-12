@@ -315,16 +315,16 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 				} else {
 					Resources res = mContext.getResources();
 					CharSequence str = "";
-					if (mMode == STATE_READY)
-						str = res.getText(R.string.mode_ready);
-					else if (mMode == STATE_PAUSE)
-						str = res.getText(R.string.mode_pause);
-					else if (mMode == STATE_LOSE)
-						str = res.getText(R.string.mode_lose);
-					else if (mMode == STATE_WIN)
-						str = res.getString(R.string.mode_win_prefix)
-						+ mWinsInARow + " "
-						+ res.getString(R.string.mode_win_suffix);
+//					if (mMode == STATE_READY)
+//						str = res.getText(R.string.mode_ready);
+//					else if (mMode == STATE_PAUSE)
+//						str = res.getText(R.string.mode_pause);
+//					else if (mMode == STATE_LOSE)
+//						str = res.getText(R.string.mode_lose);
+//					else if (mMode == STATE_WIN)
+//						str = res.getString(R.string.mode_win_prefix)
+//						+ mWinsInARow + " "
+//						+ res.getString(R.string.mode_win_suffix);
 
 					if (message != null) {
 						str = message + "\n" + str;
