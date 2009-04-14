@@ -49,7 +49,7 @@ public class MapNode  {
 		/// TODO: MAKE MapNode have a default image. Select image from mode change.
 		
 		//mode = MODE_IDLE; 
-		changeMode(MODE_IDLE);
+		changeMode(MODE_DRAGGING);
 
 		id=count;
 		count++;

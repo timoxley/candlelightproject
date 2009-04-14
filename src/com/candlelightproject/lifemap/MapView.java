@@ -468,18 +468,18 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 			switch (eventaction ) { 
 
 			case MotionEvent.ACTION_DOWN: // touch down so check if the finger is on a ball
-				Log.i("MotionEvent","Event" + eventNum + " ACTION_DOWN x: " + clickX + " y: " + clickY);
+				//Log.i("MotionEvent","Event" + eventNum + " ACTION_DOWN x: " + clickX + " y: " + clickY);
 				boolean hitNode = false;
 				for (MapNode node : mNodes) {
 					if (null != node && !hitNode) {
-						Log.i("not null", "node: " + node);
+				//		Log.i("not null", "node: " + node);
 						//node.centerOn(point);
 						
 						hitNode = node.isClicked(clickX, clickY);
 						if (hitNode) {
-							Log.i("CLICKED", "Event" + eventNum + "node: " + node);
+						//	Log.i("CLICKED", "Event" + eventNum + "node: " + node);
 							movingNode = node.getID();
-							Log.i("DRAGGING","Event" + eventNum + "movingNode"+ movingNode);
+							//Log.i("DRAGGING","Event" + eventNum + "movingNode"+ movingNode);
 							if (movingNode >= 0 && mNodes[movingNode] != null) {
 								mNodes[movingNode].centerOn(clickX, clickY);
 								mNodes[movingNode].changeMode(MapNode.MODE_SELECTED);
@@ -495,6 +495,9 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 					MapNode newNode = new MapNode(mContext);
 					mNodes[position] = newNode;
 					newNode.centerOn(clickX, clickY);
+					movingNode = newNode.getID();
+					newNode.changeMode(MapNode.MODE_SELECTED);
+					
 				}
 				
 				/* 	balID = 0;
