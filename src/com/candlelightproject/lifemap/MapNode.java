@@ -49,7 +49,7 @@ public class MapNode  {
 		/// TODO: MAKE MapNode have a default image. Select image from mode change.
 		
 		//mode = MODE_IDLE; 
-		changeMode(MODE_DRAGGING);
+		changeMode(MODE_IDLE);
 
 		id=count;
 		count++;
@@ -155,7 +155,8 @@ public class MapNode  {
 				drawable = R.drawable.node_idle;
 			break;
 			case MODE_DRAGGING:
-				drawable = R.drawable.node_dragging;
+				//drawable = R.drawable.node_dragging;
+				drawable = R.drawable.node_selected;
 			break;
 			case MODE_SELECTED:
 				drawable = R.drawable.node_selected;

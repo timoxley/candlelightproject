@@ -38,8 +38,6 @@ import android.util.Log;
 import android.graphics.Point;
 import android.view.MotionEvent;
 import com.candlelightproject.lifemap.MapNode;
-import com.google.android.maps.TrackballGestureDetector;
-
 
 /**
  * View that draws, takes keystrokes, etc. for a simple LunarLander game.
@@ -376,7 +374,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 		boolean doKeyDown(int keyCode, KeyEvent msg) {
 			synchronized (mSurfaceHolder) {
 				if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
-					Log.i("THIS","DPAD CENTER MFS");
+					//Log.i("THIS","DPAD CENTER MFS");
 					// moveStuff();
 				}
 				boolean okStart = false;
@@ -482,7 +480,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 							//Log.i("DRAGGING","Event" + eventNum + "movingNode"+ movingNode);
 							if (movingNode >= 0 && mNodes[movingNode] != null) {
 								mNodes[movingNode].centerOn(clickX, clickY);
-								mNodes[movingNode].changeMode(MapNode.MODE_SELECTED);
+								mNodes[movingNode].changeMode(MapNode.MODE_DRAGGING);
 							} else {
 								Log.e(this.getClass().toString(), "Trying to select invalid node: " + movingNode);
 							}
@@ -496,7 +494,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 					mNodes[position] = newNode;
 					newNode.centerOn(clickX, clickY);
 					movingNode = newNode.getID();
-					newNode.changeMode(MapNode.MODE_SELECTED);
+					newNode.changeMode(MapNode.MODE_DRAGGING);
 					
 				}
 				
