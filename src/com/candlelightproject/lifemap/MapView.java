@@ -20,7 +20,9 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Camera;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -39,7 +41,8 @@ import android.graphics.Point;
 import android.view.MotionEvent;
 import com.candlelightproject.lifemap.MapNode;
 import android.view.GestureDetector.OnGestureListener;
-import android.view.GestureDetector; 
+import android.view.GestureDetector;
+
 /**
  * View that draws, takes keystrokes, etc. for a simple LunarLander game.
  * 
@@ -50,8 +53,6 @@ import android.view.GestureDetector;
  * by the system.
  */
 
-
-
 class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener {
 
 	/** Handle to the application context, used to e.g. fetch Drawables. */
@@ -60,6 +61,13 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 	/** Pointer to the text view to display "Paused.." etc. */
 	private TextView mStatusText;
 
+	private Matrix translation; 
+	private Camera mCamera;
+	private float mYaw = 10.5f;
+	// Set these to whatever you like 
+	private float mRoll = 10.0f; 
+	private float mPitch = 0; 
+	
 	/** The thread that actually draws the animation */
 	private MapThread thread;
 
@@ -72,6 +80,19 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 		SurfaceHolder holder = getHolder();
 		holder.addCallback(this);
 
+		translation = new Matrix();
+		// Member variables at top of class 
+		
+		mCamera = new Camera();
+		
+		// Setup the camera rotations 
+		mCamera.rotateZ(-mYaw);
+		mCamera.rotateY(-mRoll);
+		mCamera.rotateX(-mPitch);
+
+		// Output the camera rotations to a matrix 
+		mCamera.getMatrix(translation);
+		
 		// create thread only; it's started in surfaceCreated()
 		thread = new MapThread(holder, context, new Handler() {
 			@Override
@@ -117,6 +138,24 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 		 * (eg in the case that we are dragging a node)
 		 * otherwise let the gesture scanner handle them.
 		 * */
+		
+		if (translation != null) {
+			/* 
+			 * Translate our touch events to the translation of the canvas.
+			 */
+			float posX = event.getX();
+			float[] srcPoints;
+			float[] destPoints;
+			srcPoints = new float[2];
+			destPoints = new float[2];
+			                       
+			srcPoints[0] = event.getX();
+			srcPoints[1] = event.getY();
+			Matrix inverse = new Matrix();
+			translation.invert(inverse);
+			inverse.mapPoints(destPoints, srcPoints);
+			event.setLocation(destPoints[0], destPoints[1]);
+		}
 		if (thread.doTouchEvent(event)) {
 			return true;
 		} else {
@@ -205,6 +244,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 	}
 
 	class MapThread extends Thread {
+		private Matrix mMatrix;
 		/*
 		 * State-tracking constants
 		 */
@@ -264,13 +304,13 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 		private Point surfaceCenter;
 
 
-		private MapNode[] mNodes = new MapNode[10]; 
+		private MapNode[] mNodes = new MapNode[10];
+		
 
 
 		public MapThread(SurfaceHolder surfaceHolder, Context context,
 				Handler handler) {
-
-
+			
 			// Initialize paints for speedometer
 			mLinePaint = new Paint();
 			mLinePaint.setAntiAlias(true);
@@ -284,7 +324,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 			mHandler = handler;
 			mContext = context;
 
-
+			 mMatrix = new Matrix();
 
 			Resources res = context.getResources();
 			// load background image as a Bitmap instead of a Drawable b/c
@@ -293,7 +333,6 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 					R.drawable.earthrise);
 		}
 
-		
 
 		public void init(Context context) {
 			surfaceCenter = new Point();
@@ -346,14 +385,46 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 
 		@Override
 		public void run() {
+			boolean setupCamera = false;
+			
+
+			
+			
 			while (mRun) {
-				Canvas c = null;
+				Canvas canvas = null;
 				try {
-					c = mSurfaceHolder.lockCanvas(null);
+					canvas = mSurfaceHolder.lockCanvas(null);
 					synchronized (mSurfaceHolder) {
 						//            if (mMode == STATE_RUNNING) {
-						doDraw(c);
-						//         }
+						
+						/*if (!setupCamera) {
+							
+							//canvas.save(Canvas.MATRIX_SAVE_FLAG); 
+							
+							// Save the current Camera matrix 
+							//mCamera.save();
+							
+							//mCamera.restore();
+
+							// Perform some other transforms on the matrix 
+							//mMatrix.preTranslate(-getWidth() * 0.5f, -getHeight() * 0.5f);
+							//mMatrix.postTranslate(getWidth() * 0.5f, getHeight() * 0.5f);
+
+							// Apply the matrix to the canvas 
+							
+							//mCamera.applyToCanvas(canvas);
+							//canvas.restore(); 
+							setupCamera = false;
+						}*/
+						//translation.
+						
+						//mCamera.rotateY(1);
+						//mCamera.dotWithNormal(0, 0, 1);
+						
+						
+						mCamera.getMatrix(translation);
+						canvas.concat(translation);
+						doDraw(canvas);
 					}
 				} catch (Exception e) {
 					Log.i("EXCEPTION","Exception is: " + e.toString());
@@ -363,8 +434,8 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 					// do this in a finally so that if an exception is thrown
 					// during the above, we don't leave the Surface in an
 					// inconsistent state
-					if (c != null) {
-						mSurfaceHolder.unlockCanvasAndPost(c);
+					if (canvas != null) {
+						mSurfaceHolder.unlockCanvasAndPost(canvas);
 					}
 				}
 			}
@@ -576,8 +647,44 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 			 */
 			return handled;
 		}
+		
+		/*
+		 * Returns the id of the node hit by the current event, or -1 if none were hit.
+		 */
+		public int findHitNode(MotionEvent event) {
+			int clickX = (int)event.getX(); 
+			int clickY = (int)event.getY();
+			
+			int hitNode = -1;
+			
+			for (MapNode node : mNodes) {
+				if (null != node && hitNode == -1) {
+					if (node.isClicked(clickX, clickY)) {
+						hitNode = node.getID();
+						break;
+					}
+				}
+			}
+			return hitNode;
+		}
+		
 		public boolean doSingleTapUp(MotionEvent event) {
-			// TODO Auto-generated method stub
+			
+				nodeFocus = findHitNode(event);
+						
+				if (nodeFocus >= 0) {	
+					//Log.i("DRAGGING","Event" + eventNum + "nodeFocus"+ nodeFocus);
+					if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
+						mNodes[nodeFocus].centerOn((int) event.getX(), (int) event.getY());
+						mNodes[nodeFocus].changeMode(MapNode.MODE_DRAGGING);
+						return true;
+					} else {
+						Log.e(this.getClass().toString(), "Trying to select invalid node: " + nodeFocus);
+					}
+				}
+				
+			
+			
 			return false;
 		}
 
@@ -588,13 +695,19 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 
 		public boolean doScroll(MotionEvent event1, MotionEvent event2,
 				float distanceX, float distanceY) {
-			
 			Log.i("doScroll","X: " + event1.getX() + "Y: " + event1.getY() + "distanceX: " + distanceX + "distanceY: " + distanceY);
 			
 			return false;
 		}
 
 		public void doLongPress(MotionEvent event) {
+			
+			/*nodeFocus = findHitNode(event);
+			
+			if (nodeFocus >= 0) {	
+				// TODO doLongPress action
+			}*/
+			
 			/*int clickX = (int)event.getX(); 
 			int clickY = (int)event.getY(); 
 			
@@ -630,6 +743,13 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 
 		public boolean doFling(MotionEvent event1, MotionEvent event2, float velocityX,
 				float velocityY) {
+			
+			/* nodeFocus = findHitNode(event);
+			
+			if (nodeFocus >= 0) {	
+				
+			}
+			*/
 			// TODO Auto-generated method stub
 			return false;
 		}
@@ -638,24 +758,13 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 			int clickX = (int)event.getX(); 
 			int clickY = (int)event.getY(); 
 			
-			boolean hitNode = false;
-			for (MapNode node : mNodes) {
-				if (null != node && !hitNode) {
-					hitNode = node.isClicked(clickX, clickY);
-					if (hitNode) {
-						nodeFocus = node.getID();
-						//Log.i("DRAGGING","Event" + eventNum + "nodeFocus"+ nodeFocus);
-						if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
-							mNodes[nodeFocus].centerOn(clickX, clickY);
-							mNodes[nodeFocus].changeMode(MapNode.MODE_DRAGGING);
-						} else {
-							Log.e(this.getClass().toString(), "Trying to select invalid node: " + nodeFocus);
-						}
-					}
-				}
-			}
-
-			if (!hitNode) {
+			
+			nodeFocus = findHitNode(event);
+			
+			if (nodeFocus >= 0) {
+				mNodes[nodeFocus].centerOn(clickX, clickY);
+				mNodes[nodeFocus].changeMode(MapNode.MODE_DRAGGING);
+			} else { 
 				int position = MapNode.getCount();
 				MapNode newNode = new MapNode(mContext);
 				mNodes[position] = newNode;
@@ -680,8 +789,8 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 
 				switch (eventaction ) { 
 
-				/* case MotionEvent.ACTION_DOWN: // touch down so check if the finger is on a ball
-					boolean hitNode = false;
+				case MotionEvent.ACTION_DOWN: // touch down so check if the finger is on a ball
+				/*	boolean hitNode = false;
 					for (MapNode node : mNodes) {
 						if (null != node && !hitNode) {
 							hitNode = node.isClicked(clickX, clickY);
@@ -710,7 +819,11 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 					
 					break; 
 				 	*/
-
+					return false;
+				/* 
+				 * Only use this when we are dragging, otherwise let the gesture detector handle it.
+				 * 
+				 */
 				case MotionEvent.ACTION_MOVE:   // touch drag with the ball
 					if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
 						if (mNodes[nodeFocus].getMode() == MapNode.MODE_DRAGGING) {
@@ -722,9 +835,9 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 						}				
 					}
 					
-					break; 
+				break; 
 
-				case MotionEvent.ACTION_UP: 
+				 case MotionEvent.ACTION_UP: 
 					// touch drop - just do things here after dropping
 
 					if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
@@ -732,7 +845,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 						nodeFocus = -1;
 					}
 					invalidate();
-					return true;
+					return true; 
 				} 
 				
 				// redraw the canvas
@@ -747,8 +860,10 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 		/**
 		 * Draws the ship, fuel/speed bars, and background to the provided
 		 * Canvas.
+		 * @param matrix 
 		 */
 		private void doDraw(Canvas canvas) {
+			
 			// Draw the background image. Operations on the Canvas accumulate
 			// so this is like clearing the screen.
 			//canvas.drawBitmap(mBackgroundImage, 0, 0, null);
@@ -759,6 +874,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureLi
 				flash--;
 
 			}
+			
 
 			/*         int yTop = mCanvasHeight - ((int) mY + mLanderHeight / 2);
             int xLeft = (int) mX - mLanderWidth / 2;

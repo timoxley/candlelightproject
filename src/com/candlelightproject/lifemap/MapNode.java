@@ -53,8 +53,7 @@ public class MapNode  {
 		//mode = MODE_IDLE; 
 		changeMode(MODE_IDLE);
 
-		id=count;
-		count++;
+		id=count++;
 
 	}
 
@@ -134,12 +133,10 @@ public class MapNode  {
 	
 	public double getVelX() {
 		return velX;
-		
 	}
 
 	public double getVelY() {
 		return  velY;
-		
 	}
 	
 	public int getID() {
