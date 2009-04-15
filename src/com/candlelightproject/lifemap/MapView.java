@@ -38,7 +38,8 @@ import android.util.Log;
 import android.graphics.Point;
 import android.view.MotionEvent;
 import com.candlelightproject.lifemap.MapNode;
-
+import android.view.GestureDetector.OnGestureListener;
+import android.view.GestureDetector; 
 /**
  * View that draws, takes keystrokes, etc. for a simple LunarLander game.
  * 
@@ -51,7 +52,157 @@ import com.candlelightproject.lifemap.MapNode;
 
 
 
-class MapView extends SurfaceView implements SurfaceHolder.Callback {
+class MapView extends SurfaceView implements SurfaceHolder.Callback, OnGestureListener {
+
+	/** Handle to the application context, used to e.g. fetch Drawables. */
+	private Context mContext;
+
+	/** Pointer to the text view to display "Paused.." etc. */
+	private TextView mStatusText;
+
+	/** The thread that actually draws the animation */
+	private MapThread thread;
+
+	private GestureDetector gestureScanner;
+
+	public MapView(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		gestureScanner = new GestureDetector(this);
+		// register our interest in hearing about changes to our surface
+		SurfaceHolder holder = getHolder();
+		holder.addCallback(this);
+
+		// create thread only; it's started in surfaceCreated()
+		thread = new MapThread(holder, context, new Handler() {
+			@Override
+			public void handleMessage(Message m) {
+				mStatusText.setVisibility(m.getData().getInt("viz"));
+				mStatusText.setText(m.getData().getString("text"));
+			}
+		});
+
+		setFocusable(true); // make sure we get key events
+	}
+
+	/**
+	 * Fetches the animation thread corresponding to this LunarView.
+	 * 
+	 * @return the animation thread
+	 */
+	public MapThread getThread() {
+		return thread;
+	}
+
+	/**
+	 * Standard override to get key-press events.
+	 */
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent msg) {
+		return thread.doKeyDown(keyCode, msg);
+	}
+
+	/**
+	 * Standard override for key-up. We actually care about these, so we can
+	 * turn off the engine or stop rotating.
+	 */
+	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent msg) {
+		return thread.doKeyUp(keyCode, msg);
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		Log.e("MOTION EVENT","Happened.");
+		/* Give the thread the chance to handle motion events 
+		 * (eg in the case that we are dragging a node)
+		 * otherwise let the gesture scanner handle them.
+		 * */
+		if (thread.doTouchEvent(event)) {
+			return true;
+		} else {
+			return gestureScanner.onTouchEvent(event); 
+		}
+	}
+
+
+	/**
+	 * Standard window-focus override. Notice focus lost so we can pause on
+	 * focus lost. e.g. user switches to take a call.
+	 */
+	@Override
+	public void onWindowFocusChanged(boolean hasWindowFocus) {
+		if (!hasWindowFocus) thread.pause();
+	}
+
+	/**
+	 * Installs a pointer to the text view used for messages.
+	 */
+	public void setTextView(TextView textView) {
+		mStatusText = textView;
+	}
+
+	/* Callback invoked when the surface dimensions change. */
+	public void surfaceChanged(SurfaceHolder holder, int format, int width,
+			int height) {
+		thread.setSurfaceSize(width, height);
+	}
+
+	/*
+	 * Callback invoked when the Surface has been created and is ready to be
+	 * used.
+	 */
+	public void surfaceCreated(SurfaceHolder holder) {
+		// start the thread here so that we don't busy-wait in run()
+		// waiting for the surface to be created
+		thread.setRunning(true);
+		thread.init(mContext);
+		thread.start();
+	}
+
+	/*
+	 * Callback invoked when the Surface has been destroyed and must no longer
+	 * be touched. WARNING: after this method returns, the Surface/Canvas must
+	 * never be touched again!
+	 */
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		// we have to tell thread to shut down & wait for it to finish, or else
+		// it might touch the Surface after we return and explode
+		boolean retry = true;
+		thread.setRunning(false);
+		while (retry) {
+			try {
+				thread.join();
+				retry = false;
+			} catch (InterruptedException e) {
+			}
+		}
+	}
+
+	public boolean onDown(MotionEvent e) {	
+		return thread.doDown(e);
+	}
+
+	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
+			float velocityY) {
+		return thread.doFling(e1, e2, velocityX, velocityY);
+	}
+
+	public void onLongPress(MotionEvent e) {
+		thread.doLongPress(e);
+	}
+
+	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
+			float distanceY) {
+		return thread.doScroll(e1, e2, distanceX, distanceY);
+	}
+
+	public void onShowPress(MotionEvent e) {
+		thread.doShowPress(e);
+	}
+
+	public boolean onSingleTapUp(MotionEvent e) {
+		return thread.doSingleTapUp(e);
+	}
 
 	class MapThread extends Thread {
 		/*
@@ -65,7 +216,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 
 		private int flash = 0;
 		private int eventNum = 0;
-		private int movingNode = -1;
+		private int nodeFocus = -1;
 		/*
 		 * Member (state) fields
 		 */
@@ -141,6 +292,8 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 			mBackgroundImage = BitmapFactory.decodeResource(res,
 					R.drawable.earthrise);
 		}
+
+		
 
 		public void init(Context context) {
 			surfaceCenter = new Point();
@@ -233,33 +386,6 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 		}
 
 		/**
-		 * Sets the current difficulty.
-		 * 
-		 * @param difficulty
-		 */
-		public void setDifficulty(int difficulty) {
-			/* Log.i(this.getClass().toString(), "Setting Difficulty to : " + difficulty);
-        	synchronized (mSurfaceHolder) {
-                mDifficulty = difficulty;
-            }*/
-		}
-
-		/*  public int getDifficulty() {
-            synchronized (mSurfaceHolder) {
-                return mDifficulty;
-            }
-        }
-		 */        
-		/**
-		 * Sets if the engine is currently firing.
-		 */
-		public void setFiring(boolean firing) {
-			/*  synchronized (mSurfaceHolder) {
-                mEngineFiring = firing;
-            } */
-		}
-
-		/**
 		 * Used to signal the thread whether it should be running or not.
 		 * Passing true allows the thread to run; passing false will shut it
 		 * down if it's already running. Calling start() after this was most
@@ -313,16 +439,16 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 				} else {
 					Resources res = mContext.getResources();
 					CharSequence str = "";
-//					if (mMode == STATE_READY)
-//						str = res.getText(R.string.mode_ready);
-//					else if (mMode == STATE_PAUSE)
-//						str = res.getText(R.string.mode_pause);
-//					else if (mMode == STATE_LOSE)
-//						str = res.getText(R.string.mode_lose);
-//					else if (mMode == STATE_WIN)
-//						str = res.getString(R.string.mode_win_prefix)
-//						+ mWinsInARow + " "
-//						+ res.getString(R.string.mode_win_suffix);
+					//					if (mMode == STATE_READY)
+					//						str = res.getText(R.string.mode_ready);
+					//					else if (mMode == STATE_PAUSE)
+					//						str = res.getText(R.string.mode_pause);
+					//					else if (mMode == STATE_LOSE)
+					//						str = res.getText(R.string.mode_lose);
+					//					else if (mMode == STATE_WIN)
+					//						str = res.getString(R.string.mode_win_prefix)
+					//						+ mWinsInARow + " "
+					//						+ res.getString(R.string.mode_win_suffix);
 
 					if (message != null) {
 						str = message + "\n" + str;
@@ -389,11 +515,11 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 					// ready-to-start -> start
 					doStart();
 					return true;
-				} /*else if (mMode == STATE_PAUSE && okStart) {
+				} else if (mMode == STATE_PAUSE && okStart) {
                     // paused -> running
                     unpause();
                     return true;
-                } else if (mMode == STATE_RUNNING) {
+                } /*else if (mMode == STATE_RUNNING) {
                     // center/space -> fire
                     if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER
                             || keyCode == KeyEvent.KEYCODE_SPACE) {
@@ -447,116 +573,175 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
                     }
 					 }
 			}
-*/
+			 */
 			return handled;
 		}
+		public boolean doSingleTapUp(MotionEvent event) {
+			// TODO Auto-generated method stub
+			return false;
+		}
 
-		// events when touching the screen
-		public boolean doTouchEvent(MotionEvent event) {
-			try {
-			eventNum++;
-			int eventaction = event.getAction(); 
+		public void doShowPress(MotionEvent event) {
+			// TODO Auto-generated method stub
 			
-			int clickX = (int)event.getX(); 
+		}
+
+		public boolean doScroll(MotionEvent event1, MotionEvent event2,
+				float distanceX, float distanceY) {
+			
+			Log.i("doScroll","X: " + event1.getX() + "Y: " + event1.getY() + "distanceX: " + distanceX + "distanceY: " + distanceY);
+			
+			return false;
+		}
+
+		public void doLongPress(MotionEvent event) {
+			/*int clickX = (int)event.getX(); 
 			int clickY = (int)event.getY(); 
-
-
-			//gestureDetector = new TrackballGestureDetector();
-
-			switch (eventaction ) { 
-
-			case MotionEvent.ACTION_DOWN: // touch down so check if the finger is on a ball
-				//Log.i("MotionEvent","Event" + eventNum + " ACTION_DOWN x: " + clickX + " y: " + clickY);
-				boolean hitNode = false;
-				for (MapNode node : mNodes) {
-					if (null != node && !hitNode) {
-				//		Log.i("not null", "node: " + node);
-						//node.centerOn(point);
+			
+			boolean hitNode = false;
+			for (MapNode node : mNodes) {
+				if (null != node && !hitNode) {
+					hitNode = node.isClicked(clickX, clickY);
+					if (hitNode) {
+						nodeFocus = node.getID();
 						
-						hitNode = node.isClicked(clickX, clickY);
-						if (hitNode) {
-						//	Log.i("CLICKED", "Event" + eventNum + "node: " + node);
-							movingNode = node.getID();
-							//Log.i("DRAGGING","Event" + eventNum + "movingNode"+ movingNode);
-							if (movingNode >= 0 && mNodes[movingNode] != null) {
-								mNodes[movingNode].centerOn(clickX, clickY);
-								mNodes[movingNode].changeMode(MapNode.MODE_DRAGGING);
-							} else {
-								Log.e(this.getClass().toString(), "Trying to select invalid node: " + movingNode);
-							}
+						
+						//Log.i("DRAGGING","Event" + eventNum + "nodeFocus"+ nodeFocus);
+						if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
+							mNodes[nodeFocus].centerOn(clickX, clickY);
+							mNodes[nodeFocus].changeMode(MapNode.MODE_DRAGGING);
+						} else {
+							Log.e(this.getClass().toString(), "Trying to select invalid node: " + nodeFocus);
 						}
 					}
 				}
-				
-				if (!hitNode) {
-					int position = MapNode.getCount();
-					MapNode newNode = new MapNode(mContext);
-					mNodes[position] = newNode;
-					newNode.centerOn(clickX, clickY);
-					movingNode = newNode.getID();
-					newNode.changeMode(MapNode.MODE_DRAGGING);
+			}
+
+			if (!hitNode) {
+				int position = MapNode.getCount();
+				MapNode newNode = new MapNode(mContext);
+				mNodes[position] = newNode;
+				newNode.centerOn(clickX, clickY);
+				nodeFocus = newNode.getID();
+				newNode.changeMode(MapNode.MODE_DRAGGING);
+			}
+			*/
+		}
+
+		public boolean doFling(MotionEvent event1, MotionEvent event2, float velocityX,
+				float velocityY) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		public boolean doDown(MotionEvent event) {
+			int clickX = (int)event.getX(); 
+			int clickY = (int)event.getY(); 
+			
+			boolean hitNode = false;
+			for (MapNode node : mNodes) {
+				if (null != node && !hitNode) {
+					hitNode = node.isClicked(clickX, clickY);
+					if (hitNode) {
+						nodeFocus = node.getID();
+						//Log.i("DRAGGING","Event" + eventNum + "nodeFocus"+ nodeFocus);
+						if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
+							mNodes[nodeFocus].centerOn(clickX, clickY);
+							mNodes[nodeFocus].changeMode(MapNode.MODE_DRAGGING);
+						} else {
+							Log.e(this.getClass().toString(), "Trying to select invalid node: " + nodeFocus);
+						}
+					}
+				}
+			}
+
+			if (!hitNode) {
+				int position = MapNode.getCount();
+				MapNode newNode = new MapNode(mContext);
+				mNodes[position] = newNode;
+				newNode.centerOn(clickX, clickY);
+				nodeFocus = newNode.getID();
+				newNode.changeMode(MapNode.MODE_DRAGGING);
+			}
+			
+			return true;
+		}
+		// events when touching the screen
+		public boolean doTouchEvent(MotionEvent event) {
+			try {
+				eventNum++;
+				int eventaction = event.getAction(); 
+
+				int clickX = (int)event.getX(); 
+				int clickY = (int)event.getY(); 
+
+
+				//gestureDetector = new TrackballGestureDetector();
+
+				switch (eventaction ) { 
+
+				/* case MotionEvent.ACTION_DOWN: // touch down so check if the finger is on a ball
+					boolean hitNode = false;
+					for (MapNode node : mNodes) {
+						if (null != node && !hitNode) {
+							hitNode = node.isClicked(clickX, clickY);
+							if (hitNode) {
+								nodeFocus = node.getID();
+								//Log.i("DRAGGING","Event" + eventNum + "nodeFocus"+ nodeFocus);
+								if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
+									mNodes[nodeFocus].centerOn(clickX, clickY);
+									mNodes[nodeFocus].changeMode(MapNode.MODE_DRAGGING);
+								} else {
+									Log.e(this.getClass().toString(), "Trying to select invalid node: " + nodeFocus);
+								}
+							}
+						}
+					}
+
+					if (!hitNode) {
+						int position = MapNode.getCount();
+						MapNode newNode = new MapNode(mContext);
+						mNodes[position] = newNode;
+						newNode.centerOn(clickX, clickY);
+						nodeFocus = newNode.getID();
+						newNode.changeMode(MapNode.MODE_DRAGGING);
+
+					}
 					
-				}
+					break; 
+				 	*/
+
+				case MotionEvent.ACTION_MOVE:   // touch drag with the ball
+					if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
+						if (mNodes[nodeFocus].getMode() == MapNode.MODE_DRAGGING) {
+							mNodes[nodeFocus].centerOn(clickX, clickY);
+							invalidate();
+							return true;
+						} else {
+							return false;
+						}				
+					}
+					
+					break; 
+
+				case MotionEvent.ACTION_UP: 
+					// touch drop - just do things here after dropping
+
+					if (nodeFocus >= 0 && mNodes[nodeFocus] != null) {
+						mNodes[nodeFocus].changeMode(MapNode.MODE_IDLE);
+						nodeFocus = -1;
+					}
+					invalidate();
+					return true;
+				} 
 				
-				/* 	balID = 0;
-            	for (ColorBall ball : colorballs) {
-            		// check if inside the bounds of the ball (circle)
-            		// get the center for the ball
-            		int centerX = ball.getX() + 25;
-            		int centerY = ball.getY() + 25;
-
-            		// calculate the radius from the touch to the center of the ball
-            		double radCircle  = Math.sqrt( (double) (((centerX-X)*(centerX-X)) + (centerY-Y)*(centerY-Y)));
-
-            		// if the radius is smaller then 23 (radius of a ball is 22), then it must be on the ball
-            		if (radCircle < 23){
-            			balID = ball.getID();
-                        break;
-            		}
-
-            		// check all the bounds of the ball (square)
-            		//if (X > ball.getX() && X < ball.getX()+50 && Y > ball.getY() && Y < ball.getY()+50){
-                    //	balID = ball.getID();
-                    //	break;
-                    //}
-                  }
-				 */    
-				break; 
-
-
-			case MotionEvent.ACTION_MOVE:   // touch drag with the ball
-				Log.i("MotionEvent","Event" + eventNum + "ACTION_MOVE x: " + clickX + " y: " + clickY + "movingNode:" + movingNode);
-				if (movingNode >= 0 && mNodes[movingNode] != null) {
-					Log.i("MovingEvent","Event" + eventNum + "movingNode: "+ movingNode);
-					mNodes[movingNode].centerOn(clickX, clickY);
-					/*mNodes[movingNode].setX(clickX);
-					mNodes[movingNode].setY(clickY);*/
-				}
-				// move the balls the same as the finger
-				/*      if (balID > 0) {
-                	colorballs[balID-1].setX(X-25);
-                	colorballs[balID-1].setY(Y-25);
-                }
-				 */	
-				break; 
-
-			case MotionEvent.ACTION_UP: 
-				Log.i("MotionEvent","Event" + eventNum + "ACTION_UP x: " + clickX + " y: " + clickY);
-				if (movingNode >= 0 && mNodes[movingNode] != null) {
-					mNodes[movingNode].changeMode(MapNode.MODE_IDLE);
-					movingNode = -1;
-				}
-				// touch drop - just do things here after dropping
-
-				break; 
-			} 
-			// redraw the canvas
-			invalidate(); 
+				// redraw the canvas
+				 
 			} catch (Exception e) {
 				Log.e(this.toString(), e.toString());
-				
+
 			}
-			return true; 
+			return false; 
 		}
 
 		/**
@@ -572,35 +757,30 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 			if (flash > 0) {
 				canvas.drawRect(mScratchRect, mLinePaint);
 				flash--;
-				
+
 			}
-			
+
 			/*         int yTop = mCanvasHeight - ((int) mY + mLanderHeight / 2);
             int xLeft = (int) mX - mLanderWidth / 2;
 			 */
 
-			
+
 			// Draw the fuel gauge
 			/* int fuelWidth = (int) (UI_BAR * mFuel / PHYS_FUEL_MAX);*/
-			
+
 			//mScratchRect.set
 			//mScratchRect.
 			//   mScratchRect.set//4 + fuelWidth, 4, 4 + UI_BAR_HEIGHT, 4);
 
-			
+
 			//testNode.getNode().draw(canvas);
 			MapNode previousNode;
 			MapNode node;
 			for (int i = mNodes.length - 1; i >= 0; i--) {
 				node = mNodes[i];
-				/*previousNode = node;
-				if (previousNode != null) {
-					node.lineTo(previousNode);
-				}*/
 				if (null != node) {
 					node.draw(canvas);
 				}
-				
 			}
 			/*
             // Draw the speed gauge, with a two-tone effect
@@ -655,6 +835,23 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 		 * Detects the end-of-game and sets the UI to the next state.
 		 */
 		private void updatePhysics() {
+			/*double friction = 0.8;
+			MapNode node;
+			for (int i = mNodes.length - 1; i >= 0; i--) {
+				node = mNodes[i];
+
+				node.setVelY(node.getVelY() * friction);
+				if (node.getVelX() > 0) {
+					node.setVelX(node.getVelX() * friction);	
+
+				}
+				if (node.getVelY() > 0) {	
+					node.setVelY(node.getVelY() * friction);
+					node.setX((int) (node.getX() + node.getVelX()));
+					node.setY((int) (node.getY() + node.getVelY()));
+				}
+			}*/
+
 			/* long now = System.currentTimeMillis();
 
             // Do nothing if mLastTime is in the future.
@@ -726,7 +923,7 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
                 int result = STATE_LOSE;
                 CharSequence message = "";
 			 */
-			Resources res = mContext.getResources();
+			//Resources res = mContext.getResources();
 			/*double speed = Math.sqrt(mDX * mDX + mDY * mDY);
                 boolean onGoal = (mGoalX <= mX - mLanderWidth / 2 && mX
                         + mLanderWidth / 2 <= mGoalX + mGoalWidth);
@@ -755,119 +952,19 @@ class MapView extends SurfaceView implements SurfaceHolder.Callback {
 
                 setState(result, message);
             } */
+		}
+
+		public boolean doTouchMotionEvent(MotionEvent e1, MotionEvent e2,
+				float velocityX, float velocityY) {
+
+			int eventAction = e1.getAction();
+
+			Log.i("doTouchMotionEvent", "Action is: " + eventAction);
+
+			//switch eventAction;
+
+			return true;
 		} 
 	}
 
-	/** Handle to the application context, used to e.g. fetch Drawables. */
-	private Context mContext;
-
-	/** Pointer to the text view to display "Paused.." etc. */
-	private TextView mStatusText;
-
-	/** The thread that actually draws the animation */
-	private MapThread thread;
-
-	public MapView(Context context, AttributeSet attrs) {
-		super(context, attrs);
-
-		// register our interest in hearing about changes to our surface
-		SurfaceHolder holder = getHolder();
-		holder.addCallback(this);
-
-		// create thread only; it's started in surfaceCreated()
-		thread = new MapThread(holder, context, new Handler() {
-			@Override
-			public void handleMessage(Message m) {
-				mStatusText.setVisibility(m.getData().getInt("viz"));
-				mStatusText.setText(m.getData().getString("text"));
-			}
-		});
-
-		setFocusable(true); // make sure we get key events
-	}
-
-	/**
-	 * Fetches the animation thread corresponding to this LunarView.
-	 * 
-	 * @return the animation thread
-	 */
-	public MapThread getThread() {
-		return thread;
-	}
-
-	/**
-	 * Standard override to get key-press events.
-	 */
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent msg) {
-		return thread.doKeyDown(keyCode, msg);
-	}
-
-	/**
-	 * Standard override for key-up. We actually care about these, so we can
-	 * turn off the engine or stop rotating.
-	 */
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent msg) {
-		return thread.doKeyUp(keyCode, msg);
-	}
-
-	@Override
-	public boolean onTouchEvent(MotionEvent event) {
-		return thread.doTouchEvent(event);
-	}
-
-
-	/**
-	 * Standard window-focus override. Notice focus lost so we can pause on
-	 * focus lost. e.g. user switches to take a call.
-	 */
-	@Override
-	public void onWindowFocusChanged(boolean hasWindowFocus) {
-		if (!hasWindowFocus) thread.pause();
-	}
-
-	/**
-	 * Installs a pointer to the text view used for messages.
-	 */
-	public void setTextView(TextView textView) {
-		mStatusText = textView;
-	}
-
-	/* Callback invoked when the surface dimensions change. */
-	public void surfaceChanged(SurfaceHolder holder, int format, int width,
-			int height) {
-		thread.setSurfaceSize(width, height);
-	}
-
-	/*
-	 * Callback invoked when the Surface has been created and is ready to be
-	 * used.
-	 */
-	public void surfaceCreated(SurfaceHolder holder) {
-		// start the thread here so that we don't busy-wait in run()
-		// waiting for the surface to be created
-		thread.setRunning(true);
-		thread.init(mContext);
-		thread.start();
-	}
-
-	/*
-	 * Callback invoked when the Surface has been destroyed and must no longer
-	 * be touched. WARNING: after this method returns, the Surface/Canvas must
-	 * never be touched again!
-	 */
-	public void surfaceDestroyed(SurfaceHolder holder) {
-		// we have to tell thread to shut down & wait for it to finish, or else
-		// it might touch the Surface after we return and explode
-		boolean retry = true;
-		thread.setRunning(false);
-		while (retry) {
-			try {
-				thread.join();
-				retry = false;
-			} catch (InterruptedException e) {
-			}
-		}
-	}
 }

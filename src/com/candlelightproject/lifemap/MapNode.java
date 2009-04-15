@@ -13,6 +13,8 @@ public class MapNode  {
 	private Drawable node; // the image of the ball
 	private int coordX = 0; // the x coordinate at the canvas
 	private int coordY = 0; // the y coordinate at the canvas
+	private double velX = 0;
+	private double velY = 0;
 	private int id; // gives every ball his own id, for now not necessary
 	private static int count = 0;
 	private boolean goRight = true;
@@ -121,7 +123,25 @@ public class MapNode  {
 	public int getY() {
 		return coordY;
 	}
+	
+	public void setVelX(double newX) {
+		velX = newX;
+	}
 
+	public void setVelY(double newY) {
+		velY = newY;
+	}
+	
+	public double getVelX() {
+		return velX;
+		
+	}
+
+	public double getVelY() {
+		return  velY;
+		
+	}
+	
 	public int getID() {
 		return id;
 	}
