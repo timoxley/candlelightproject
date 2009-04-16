@@ -21,6 +21,9 @@ public class GraphLoader extends DefaultHandler {
 		if(qName.equals("TextNode")) {
 			currentNode = new TextNode();
 			currentNode.load(qName, atts);
+		} else if(qName.equals("ContactNode")) {
+			currentNode = new ContactNode();
+			currentNode.load(qName, atts);
 		}
 		// All other node types
 		else if(currentNode != null){

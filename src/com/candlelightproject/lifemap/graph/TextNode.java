@@ -41,8 +41,12 @@ public class TextNode extends Node {
 		return text;
 	}
 	
+	public Graph.NodeType getType() {
+		return Graph.NodeType.TEXT_NODE;
+	}
+	
 	public String saveString() {
-		String result = "<TextNode id=\""+id+"\" text=\""+text.replace("\"", "\\\"")+"\">\n";
+		String result = "<TextNode id=\""+id+"\" text=\""+text.replace("\"", "&quot;")+"\">\n";
 		for(int i: neighbours) {
 			result += "<neighbour id=\""+i+"\" />\n";
 		}

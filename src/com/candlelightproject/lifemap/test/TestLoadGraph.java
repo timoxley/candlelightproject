@@ -13,7 +13,7 @@ public class TestLoadGraph {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		File inFile = new File("test.xml");
+		File inFile = new File("test/test.xml");
 		GraphLoader gl = new GraphLoader();
 		try {
 			FileInputStream fis = new FileInputStream(inFile);

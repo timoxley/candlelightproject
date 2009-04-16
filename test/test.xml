@@ -12,6 +12,7 @@
 <neighbour id="0" />
 </TextNode>
 <TextNode id="3" text="Test 3">
-<neighbour id="0" />
+<neighbour id="0" /><neighbour id="4"></neighbour>
 </TextNode>
-</graph>
+	<ContactNode contactId="10" name="Douglas Catchpole" phoneNumber="0402499878" primaryEmail="douglas.catchpole@gmail.com" id="4">
+		<neighbour id="3"></neighbour></ContactNode></graph>

@@ -15,6 +15,8 @@ public class Graph {
 	private static ArrayList<Node> graph = new ArrayList<Node>();
 	private static Stack<Integer> empty = new Stack<Integer>();
 	
+	public static enum NodeType {TEXT_NODE, CONTACT_NODE}; 
+	
 	/**
 	 * 
 	 * @return
