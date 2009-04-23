@@ -1,2 +1,4 @@
 bin/
 src/com/candlelightproject/lifemap/R.java
+.project
+.classpath

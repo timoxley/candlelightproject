@@ -14,7 +14,7 @@ import com.candlelightproject.lifemap.contacts.ContactManager;
 import com.candlelightproject.lifemap.graph.ContactNode;
 import com.candlelightproject.lifemap.MapView;
 import com.candlelightproject.lifemap.R;
-import com.candlelightproject.lifemap.MapView.MapThread;
+import com.candlelightproject.lifemap.MapThread;
 
 public class LifeMap extends Activity {
 	
@@ -53,9 +53,6 @@ public class LifeMap extends Activity {
         if (foundId > 0) {
         	ContactManager.updateContactRecordOnPhone(foundId, People.NAME, "UpdatedName");
         }
-        
-        // LogCat Example (use this instead of System.out):
-        Log.d("We have", "made it this far!");
 	
 	    // get handles to the LunarView from XML, and its LunarThread
 	    mMapView = (MapView) findViewById(R.id.lifemap);
@@ -108,30 +105,7 @@ public class LifeMap extends Activity {
         super.onCreateOptionsMenu(menu);
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.options_menu, menu);
-        
-        /*// Set default menu option
-        Log.i(this.getClass().toString(), "Difficulty is: " + mMapThread.getDifficulty());
-        switch (mMapThread.getDifficulty()) {
-        	case 0:
-                menu.findItem(R.id.menu_easy).setChecked(true);        		
-                break;
-        	case 1:
-                menu.findItem(R.id.menu_medium).setChecked(true);
-                break;
-        	case 2:
-                menu.findItem(R.id.menu_hard).setChecked(true);
-                break;
-        }*/
-        /* return true; */
-/*
-        menu.add(0, MENU_START, 0, R.string.menu_start);
-        menu.add(0, MENU_STOP, 0, R.string.menu_stop);
-        menu.add(0, MENU_PAUSE, 0, R.string.menu_pause);
-        menu.add(0, MENU_RESUME, 0, R.string.menu_resume);
-        menu.add(0, MENU_EASY, 0, R.string.menu_easy);
-        menu.add(0, MENU_MEDIUM, 0, R.string.menu_medium);
-        menu.add(0, MENU_HARD, 0, R.string.menu_hard);
-*/
+
         return true;
     }
 
@@ -154,33 +128,6 @@ public class LifeMap extends Activity {
     	
     		case R.id.text_node:
     			return true;
-            
-    	
-//    		case R.id.menu_start:
-//                mMapThread.doStart();
-//                return true;
-//            case R.id.menu_stop:
-//                mMapThread.setState(MapThread.STATE_LOSE,
-//                        getText(R.string.message_stopped));
-//                return true;
-//            case R.id.menu_pause:
-//                mMapThread.pause();
-//                return true;
-//            case R.id.menu_resume:
-//                mMapThread.unpause();
-//                return true;
-//            case R.id.menu_easy:
-//                mMapThread.setDifficulty(MapThread.DIFFICULTY_EASY);
-//                item.setChecked(true);
-//                return true;
-//            case R.id.menu_medium:
-//                mMapThread.setDifficulty(MapThread.DIFFICULTY_MEDIUM);
-//                item.setChecked(true);
-//                return true;
-//            case R.id.menu_hard:
-//                mMapThread.setDifficulty(MapThread.DIFFICULTY_HARD);
-//                item.setChecked(true);
-//                return true;
         }
 
         return false;
